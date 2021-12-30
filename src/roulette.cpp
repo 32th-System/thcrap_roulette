@@ -322,18 +322,6 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	puts("You can also specify multiple patch names, separated by spaces");
 	exclusion_input(patch_exclude);
 
-	char _num_patches[8];
-	unsigned int num_patches;
-sel_num_patches:
-	printf("Number of patches: ");
-	fgets(_num_patches, 8, stdin);
-	num_patches = atoi(_num_patches);
-	if (num_patches == 0) {
-		puts("Try again");
-		goto sel_num_patches;
-	}
-	printf("%d patches\n\n", num_patches);
-
 	puts("Downloading patchlist...");
 	repo_t** repos = RepoDiscover_wrapper(start_url);
 	// std::vector<repo_t*> repos;
@@ -349,6 +337,18 @@ sel_num_patches:
 			}
 		}
 	}
+
+	char _num_patches[8];
+	unsigned int num_patches;
+sel_num_patches:
+	printf("Number of patches (max: %d): ", patches.size());
+	fgets(_num_patches, 8, stdin);
+	num_patches = atoi(_num_patches);
+	if (num_patches == 0 || num_patches > patches.size()) {
+		puts("Try again");
+		goto sel_num_patches;
+	}
+	printf("%d patches\n\n", num_patches);
 
 	std::vector<patch_desc_t> rolled_patches;
 
