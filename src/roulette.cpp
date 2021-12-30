@@ -309,7 +309,11 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 		"random_sfx", // I should just delete this mod from my repo
 		"score_uncap",
 		"th128_gold_medal_count",
-		"base_exphp"
+		"base_exphp",
+		"c_key",
+		"taso",
+		"NoDat",
+		"th17prac"
 	};
 
 	puts("Do you want exclude any patch repos from the roulette?");
@@ -367,6 +371,7 @@ sel_num_patches:
 
 		//rolled_patches.push_back(patch);
 	}
+	AddPatch(stack, repos, { "ExpHP", "anm_leak" });
 
 	/// Build the new run configuration
 	json_t* new_cfg = json_pack("{s[]}", "patches");
