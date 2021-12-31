@@ -392,7 +392,7 @@ sel_num_patches:
 	puts("NOTE: only data for games already in your games.js will be downloaded");
 	getchar();
 
-	log_init(0);
+	log_init(1);
 	progress_state_t state;
 	stack_update_wrapper(update_filter_global_wrapper, NULL, progress_callback, &state);
 	state.files.clear();
