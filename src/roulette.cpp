@@ -30,7 +30,7 @@ struct progress_state_t
 	std::map<std::string, std::chrono::steady_clock::time_point> files;
 };
 
-char** games_json_to_array(json_t* games)
+char** games_json_to_array(json_t* games, const char* game)
 {
 	char** array;
 	const char* key;
@@ -38,6 +38,12 @@ char** games_json_to_array(json_t* games)
 
 	array = strings_array_create();
 	json_object_foreach(games, key, value) {
+		if (game && *game) {
+			if (strcmp(key, game) == 0) {
+				array = strings_array_add(array, key);
+			}
+			continue;
+		}
 		array = strings_array_add(array, key);
 	}
 	return array;
@@ -313,7 +319,9 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 		"c_key",
 		"taso",
 		"NoDat",
-		"th17prac"
+		"th17prac",
+		"anm_leak",
+		"vx-customshots"
 	};
 
 	puts("Do you want exclude any patch repos from the roulette?");
@@ -324,23 +332,78 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	puts("Do you want exclude any patches from the roulette?");
 	puts("If you type the name of a patch already in this list, it will be removed from the list");
 	puts("You can also specify multiple patch names, separated by spaces");
+	puts("IMPORTANT: anm_leak is in this list because it always gets added no matter what!");
 	exclusion_input(patch_exclude);
+
+	puts("Which game do you want to patch?");
+	puts("Press ENTER without typing anything to proceed");
+	char game_inp[16] = {};
+	fgets(game_inp, 16, stdin);
+	*strchr(game_inp, '\n') = 0;
 
 	puts("Downloading patchlist...");
 	repo_t** repos = RepoDiscover_wrapper(start_url);
-	// std::vector<repo_t*> repos;
+
+	// Copied from thcrap_wrapper/src/install_modules.c to fix linker error
+
+	// From thcrap_update/src/http_status.h
+	// Slightly modified since this is C
+	typedef enum HttpStatus {
+		// 200 - success
+		HttpOk,
+		// Download cancelled by the progress callback, or another client
+		// declared the server as dead
+		HttpCancelled,
+		// 3XX and 4XX - file not found, not accessible, moved, etc.
+		HttpClientError,
+		// 5XX errors - server errors, further requests are likely to fail.
+		// Also covers weird error codes like 1XX and 2XX which we shouldn't see.
+		HttpServerError,
+		// Error returned by the download library or by the write callback
+		HttpSystemError,
+		// Error encountered before loading thcrap_update.dll
+		HttpLibLoadError
+	} HttpStatus;
+
+
+	typedef HttpStatus download_single_file_t(const char* url, const char* fn);
+	HMODULE hUpdate = thcrap_update_module();
+	download_single_file_t* download_single_file = (download_single_file_t*)GetProcAddress(hUpdate, "download_single_file");
 
 	std::vector<patch_desc_t> patches;
 
 	for (int i = 0; repos[i] != NULL; ++i) {
 		if (!vector_string_contains(repo_exclude, repos[i]->id)) {
-			for (int j = 0; repos[i]->patches[j].patch_id != NULL; j++) {
+			for (int j = 0; repos[i]->patches[j].patch_id != NULL; ++j) {
 				if (!vector_string_contains(patch_exclude, repos[i]->patches[j].patch_id)) {
+					if (*game_inp == 0) goto patches_push_back;
+
+					json_t* files_js = NULL;
+					for (int k = 0; repos[i]->servers[k]; ++k) {
+						std::string _url = repos[i]->servers[k];
+						_url += repos[i]->patches[j].patch_id;
+						_url += "/files.js";
+						HttpStatus status = download_single_file(_url.c_str(), "files.js");
+						if (status == HttpOk) {
+							files_js = json_load_file("files.js", 0, nullptr);
+							if (!files_js) continue;
+							break;
+						}
+					}
+					if (!files_js) continue;
+					const char* fn;
+					json_t* crc;
+
+					json_object_foreach(files_js, fn, crc) {
+						if (strstr(fn, game_inp)) goto patches_push_back;
+					}
+					continue;
+					patches_push_back:
 					patches.push_back({ repos[i]->id, repos[i]->patches[j].patch_id });
 				}
 			}
 		}
-	}
+	}	
 
 	char _num_patches[8];
 	unsigned int num_patches;
@@ -383,12 +446,15 @@ sel_num_patches:
 	}
 	json_object_set_new(new_cfg, "console", json_false());
 	json_object_set_new(new_cfg, "dat_dump", json_false());
+	if (*game_inp) {
+		json_object_set_new(new_cfg, "game", json_string(game_inp));
+	}
 
 	const char* run_cfg_str = json_dumps(new_cfg, JSON_INDENT(2) | JSON_SORT_KEYS);
 	file_write_text("config/random.js", run_cfg_str);
 	puts("You rolled:");
 	puts(run_cfg_str);
-	puts("Saved to config/random.js. Press any key to start downloading");
+	puts("Saved to config/random.js. Press ENTER to start downloading");
 	puts("NOTE: only data for games already in your games.js will be downloaded");
 	getchar();
 
@@ -398,7 +464,7 @@ sel_num_patches:
 	state.files.clear();
 
 	json_t* games_js = json_load_file_report("config/games.js");
-	char** filter = games_json_to_array(games_js);
+	char** filter = games_json_to_array(games_js, game_inp);
 
 	stack_update_wrapper(update_filter_games_wrapper, filter, progress_callback, &state);
 	state.files.clear();
