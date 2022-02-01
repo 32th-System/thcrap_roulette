@@ -341,9 +341,6 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	fgets(game_inp, 16, stdin);
 	*strchr(game_inp, '\n') = 0;
 
-	puts("Downloading patchlist...");
-	repo_t** repos = RepoDiscover_wrapper(start_url);
-
 	// Copied from thcrap_wrapper/src/install_modules.c to fix linker error
 
 	// From thcrap_update/src/http_status.h
@@ -365,10 +362,17 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 		HttpLibLoadError
 	} HttpStatus;
 
-
 	typedef HttpStatus download_single_file_t(const char* url, const char* fn);
 	HMODULE hUpdate = thcrap_update_module();
 	download_single_file_t* download_single_file = (download_single_file_t*)GetProcAddress(hUpdate, "download_single_file");
+	if (*game_inp && !download_single_file) {
+		puts("FATAL ERROR: thcrap version too old!");
+		getchar();
+		return 1;
+	}
+
+	puts("Downloading patchlist...");
+	repo_t** repos = RepoDiscover_wrapper(start_url);
 
 	std::vector<patch_desc_t> patches;
 
