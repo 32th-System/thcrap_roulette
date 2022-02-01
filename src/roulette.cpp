@@ -19,6 +19,9 @@
 
 #include <win32_utf8/entry_main.c>
 
+namespace crsh {
+#include "exception.cpp"
+}
 
 // From select.cpp from thcrap_configure
 typedef std::list<patch_desc_t> patch_sel_stack_t;
@@ -290,6 +293,7 @@ exclusion_input_start:
 
 int TH_CDECL win32_utf8_main(int argc, const char** argv)
 {
+	AddVectoredExceptionHandler(0, crsh::exception_filter);
 	VLA(char, current_dir, MAX_PATH);
 	GetModuleFileNameU(NULL, current_dir, MAX_PATH);
 	PathRemoveFileSpecU(current_dir);
