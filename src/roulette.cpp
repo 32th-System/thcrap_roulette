@@ -370,6 +370,7 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 		getchar();
 		return 1;
 	}
+	if (strcmp(game_inp, "th18") == 0) patch_exclude.push_back("bullet-cap");
 
 	puts("Downloading patchlist...");
 	repo_t** repos = RepoDiscover_wrapper(start_url);
@@ -421,8 +422,6 @@ sel_num_patches:
 	}
 	printf("%d patches\n\n", num_patches);
 
-	std::vector<patch_desc_t> rolled_patches;
-
 	unsigned short seed;
 	_rdseed16_step(&seed);
 	srand(seed);
@@ -435,8 +434,6 @@ sel_num_patches:
 		patches.erase(patches.begin() + idx);
 
 		AddPatch(stack, repos, patch);
-
-		//rolled_patches.push_back(patch);
 	}
 	AddPatch(stack, repos, { "ExpHP", "anm_leak" });
 
