@@ -426,13 +426,13 @@ sel_num_patches:
 	}
 	printf("%d patches\n\n", num_patches);
 
-	unsigned short seed;
-	_rdseed16_step(&seed);
-	srand(seed);
+	FILETIME _time;
+	GetSystemTimeAsFileTime(&_time);
+	srand(_time.dwLowDateTime);
 
 	patch_sel_stack_t stack;
 
-	for (int i = 0; i < num_patches; i++) {
+	for (unsigned int i = 0; i < num_patches; i++) {
 		int idx = rand() % patches.size();
 		patch_desc_t patch = patches[idx];
 		patches.erase(patches.begin() + idx);
