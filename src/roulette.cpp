@@ -474,5 +474,9 @@ sel_num_patches:
 	stack_update_wrapper(update_filter_games_wrapper, filter, progress_callback, &state);
 	state.files.clear();
 
+	log_flush();
+	puts("\n\nDone! You can now run roulette_launch.bat to lauch.\nPress ENTER to close");
+	getchar();
+
 	return 0;
 }
