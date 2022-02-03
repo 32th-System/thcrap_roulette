@@ -341,7 +341,7 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	std::vector<std::string> repo_exclude;
 	std::vector<std::string> patch_exclude;
 
-	//download_single_file("https://raw.githubusercontent.com/touhoureplayshowcase/thcrap_roulette/master/blacklist.json", "blacklist.json");
+	download_single_file("https://raw.githubusercontent.com/touhoureplayshowcase/thcrap_roulette/master/blacklist.json", "blacklist.json");
 	json_t* blacklist = json_load_file("blacklist.json", 0, nullptr);
 	if (!json_is_object(blacklist)) goto after_blacklist_init;
 
