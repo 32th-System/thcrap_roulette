@@ -1,0 +1,20 @@
+{
+	"repo_exclude": [
+		"thpatch",
+		"nmlgc"
+	],
+	"patch_exclude": [
+		"dmg_debug",
+		"esc_r",
+		"random_sfx",
+		"score_uncap",
+		"th128_gold_medal_count",
+		"base_exphp",
+		"c_key",
+		"taso",
+		"NoDat",
+		"th17prac",
+		"anm_leak",
+		"vx-customshots"
+	]
+}
