@@ -308,43 +308,6 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 
 	const char* start_url = "https://srv.thpatch.net/";
 
-	std::vector<std::string> repo_exclude = {
-		"thpatch",
-		"nmlgc"
-	};
-
-	std::vector<std::string> patch_exclude = {
-		"dmg_debug",
-		"esc_r",
-		"random_sfx", // I should just delete this mod from my repo
-		"score_uncap",
-		"th128_gold_medal_count",
-		"base_exphp",
-		"c_key",
-		"taso",
-		"NoDat",
-		"th17prac",
-		"anm_leak",
-		"vx-customshots"
-	};
-
-	puts("Do you want exclude any patch repos from the roulette?");
-	puts("If you type the name of a repo already in this list, it will be removed from the list");
-	puts("You can also specify multiple repo names, separated by spaces");
-	exclusion_input(repo_exclude);
-
-	puts("Do you want exclude any patches from the roulette?");
-	puts("If you type the name of a patch already in this list, it will be removed from the list");
-	puts("You can also specify multiple patch names, separated by spaces");
-	puts("IMPORTANT: anm_leak is in this list because it always gets added no matter what!");
-	exclusion_input(patch_exclude);
-
-	puts("Which game do you want to patch?");
-	puts("Press ENTER without typing anything to proceed");
-	char game_inp[16] = {};
-	fgets(game_inp, 16, stdin);
-	*strchr(game_inp, '\n') = 0;
-
 	// Copied from thcrap_wrapper/src/install_modules.c to fix linker error
 
 	// From thcrap_update/src/http_status.h
@@ -369,11 +332,57 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	typedef HttpStatus download_single_file_t(const char* url, const char* fn);
 	HMODULE hUpdate = thcrap_update_module();
 	download_single_file_t* download_single_file = (download_single_file_t*)GetProcAddress(hUpdate, "download_single_file");
-	if (*game_inp && !download_single_file) {
+	if (!download_single_file) {
 		puts("FATAL ERROR: thcrap version too old!");
 		getchar();
 		return 1;
 	}
+
+	std::vector<std::string> repo_exclude;
+	std::vector<std::string> patch_exclude;
+
+	//download_single_file("https://raw.githubusercontent.com/touhoureplayshowcase/thcrap_roulette/master/blacklist.json", "blacklist.json");
+	json_t* blacklist = json_load_file("blacklist.json", 0, nullptr);
+	if (!json_is_object(blacklist)) goto after_blacklist_init;
+
+	json_t* repo_exclude_j = json_object_get(blacklist, "repo_exclude");
+	if(json_is_array(repo_exclude_j)) {
+		size_t i;
+		json_t* val;
+		json_array_foreach(repo_exclude_j, i, val) {
+			if (const char* repo = json_string_value(val))
+				repo_exclude.push_back(repo);
+		}
+	}
+
+	json_t* patch_exclude_j = json_object_get(blacklist, "patch_exclude");
+	if (json_is_array(patch_exclude_j)) {
+		size_t i;
+		json_t* val;
+		json_array_foreach(patch_exclude_j, i, val) {
+			if (const char* patch = json_string_value(val))
+				patch_exclude.push_back(patch);
+		}
+	}
+
+	after_blacklist_init:
+	puts("Do you want exclude any patch repos from the roulette?");
+	puts("If you type the name of a repo already in this list, it will be removed from the list");
+	puts("You can also specify multiple repo names, separated by spaces");
+	exclusion_input(repo_exclude);
+
+	puts("Do you want exclude any patches from the roulette?");
+	puts("If you type the name of a patch already in this list, it will be removed from the list");
+	puts("You can also specify multiple patch names, separated by spaces");
+	puts("IMPORTANT: anm_leak is in this list because it always gets added no matter what!");
+	exclusion_input(patch_exclude);
+
+	puts("Which game do you want to patch?");
+	puts("Press ENTER without typing anything to proceed");
+	char game_inp[16] = {};
+	fgets(game_inp, 16, stdin);
+	*strchr(game_inp, '\n') = 0;
+
 	if (strcmp(game_inp, "th18") == 0) patch_exclude.push_back("bullet-cap");
 
 	puts("Downloading patchlist...");
