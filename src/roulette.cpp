@@ -247,10 +247,29 @@ bool vector_string_contains(std::vector<std::string>& vec, const char* str) {
 	return false;
 }
 
+const char* cmd_inp() {
+	size_t size = 32;
+	char* buf = (char*)malloc(size);
+	size_t i = 0;
+	char a;
+	for (;;) {
+		a = getchar();
+		if (a == '\n') break;
+		if (i == size) {
+			size += 32;
+			buf = (char*)realloc(buf, size);
+		}
+		buf[i++] = a;
+	}
+	buf[i] = 0;
+	return buf;
+}
+
 void exclusion_input(std::vector<std::string>& exclude) {
-	char inp[512];
+	const char* inp = NULL;
 
 exclusion_input_start:
+	if (inp) free((void*)inp);
 	printf("Currently excluded: ");
 	for (const std::string& repo_name : exclude) {
 		printf(repo_name.c_str());
@@ -260,14 +279,11 @@ exclusion_input_start:
 	puts("Press ENTER without typing anything to proceed");
 
 	printf("\nEnter your input(s): ");
-	inp[0] = 0;
-	fgets(inp, 512, stdin);
+	inp = cmd_inp();
 	putchar('\n'); putchar('\n');
 
-	if (!(inp[0] == '\n' && inp[1] == 0)) {
-		char* l = inp;
-		size_t inp_len = strlen(inp);
-		inp[inp_len - 1] = 0;
+	if (*inp) {
+		const char* l = inp;
 
 	search_inputs:
 		while (*l == ' ')
@@ -277,7 +293,7 @@ exclusion_input_start:
 			goto exclusion_input_start;
 		}
 
-		char* l_ = strchr(l, ' ');
+		const char* l_ = strchr(l, ' ');
 		if (l_) {
 			add_remove_vector_string(exclude, std::string(l, l_ - l));
 			l = l_;
@@ -289,6 +305,26 @@ exclusion_input_start:
 
 		goto exclusion_input_start;
 	}
+	free((void*)inp);
+}
+
+bool yes_no(const char* q) {
+	puts(q);
+yesno_begin:
+
+	puts("Y for yes, N for no");
+	const char* a = cmd_inp();
+
+	if (a[0] == 'Y' || a[0] == 'y') {
+		free((void*)a);
+		return true;
+	}
+	if (a[0] == 'N' || a[0] == 'n') {
+		free((void*)a);
+		return false;
+	}
+	free((void*)a);
+	goto yesno_begin;
 }
 
 int TH_CDECL win32_utf8_main(int argc, const char** argv)
@@ -342,6 +378,11 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	std::vector<std::string> patch_exclude;
 
 	download_single_file("https://raw.githubusercontent.com/touhoureplayshowcase/thcrap_roulette/master/blacklist.json", "blacklist.json");
+	if (!PathFileExistsW(L"blacklist.json")) {
+		puts("Failed to download blacklist.json!");
+		puts("Proceeding with no blacklist");
+		goto after_blacklist;
+	}
 	json_t* blacklist = json_load_file("blacklist.json", 0, nullptr);
 	if (!json_is_object(blacklist)) goto after_blacklist_init;
 
@@ -374,8 +415,11 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	puts("Do you want exclude any patches from the roulette?");
 	puts("If you type the name of a patch already in this list, it will be removed from the list");
 	puts("You can also specify multiple patch names, separated by spaces");
-	puts("IMPORTANT: anm_leak is in this list because it always gets added no matter what!");
 	exclusion_input(patch_exclude);
+
+	after_blacklist:
+	patch_exclude.push_back("anm_leak");
+	patch_exclude.push_back("debug_counters");
 
 	puts("Which game do you want to patch?");
 	puts("Press ENTER without typing anything to proceed");
@@ -444,10 +488,14 @@ sel_num_patches:
 		int idx = rand() % patches.size();
 		patch_desc_t patch = patches[idx];
 		patches.erase(patches.begin() + idx);
-
 		AddPatch(stack, repos, patch);
 	}
-	AddPatch(stack, repos, { "ExpHP", "anm_leak" });
+	
+	if(yes_no("Do you want to add anm_leak, a patch that fixes crash and lag issues related to rendering?"))
+		AddPatch(stack, repos, { "ExpHP", "anm_leak" });
+
+	if (yes_no("Do you want to add debug_counters, a patch that will show various information about the game's state?"))
+		AddPatch(stack, repos, { "ExpHP", "debug_counters" });
 
 	/// Build the new run configuration
 	json_t* new_cfg = json_pack("{s[]}", "patches");
