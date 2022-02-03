@@ -404,8 +404,7 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 						HttpStatus status = download_single_file(_url.c_str(), "files.js");
 						if (status == HttpOk) {
 							files_js = json_load_file("files.js", 0, nullptr);
-							if (!files_js) continue;
-							break;
+							if (files_js) break;
 						}
 					}
 					if (!files_js) continue;
