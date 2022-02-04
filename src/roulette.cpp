@@ -380,8 +380,8 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	download_single_file("https://raw.githubusercontent.com/touhoureplayshowcase/thcrap_roulette/master/blacklist.json", "blacklist.json");
 	if (!PathFileExistsW(L"blacklist.json")) {
 		puts("Failed to download blacklist.json!");
-		puts("Proceeding with no blacklist");
-		goto after_blacklist;
+		puts("Proceeding with no default parch/repo exclusions\n");
+		goto after_blacklist_init;
 	}
 	json_t* blacklist = json_load_file("blacklist.json", 0, nullptr);
 	if (!json_is_object(blacklist)) goto after_blacklist_init;
@@ -417,7 +417,6 @@ int TH_CDECL win32_utf8_main(int argc, const char** argv)
 	puts("You can also specify multiple patch names, separated by spaces");
 	exclusion_input(patch_exclude);
 
-	after_blacklist:
 	patch_exclude.push_back("anm_leak");
 	patch_exclude.push_back("debug_counters");
 
@@ -517,7 +516,7 @@ sel_num_patches:
 	puts(run_cfg_str);
 	puts("Saved to config/random.js. Press ENTER to start downloading");
 	puts("NOTE: only data for games already in your games.js will be downloaded");
-	getchar();
+	free((void*)cmd_inp());
 
 	log_init(1);
 	progress_state_t state;
@@ -532,7 +531,7 @@ sel_num_patches:
 
 	log_flush();
 	puts("\n\nDone! You can now run roulette_launch.bat to lauch.\nPress ENTER to close");
-	getchar();
+	free((void*)cmd_inp());
 
 	return 0;
 }
