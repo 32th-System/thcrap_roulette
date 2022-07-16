@@ -1,0 +1,1 @@
+To compile, clone this repository into a thcrap repository. Then use the Visual Studio UI to add thcrap_roulette.vcxproj to thcrap.sln. Optionally, you can use build order options to ensure that thcrap.dll and thcrap_update.dll compile before thcrap_roulette.exe
